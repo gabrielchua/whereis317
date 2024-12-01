@@ -81,13 +81,13 @@ const ThemeToggle = () => {
 };
 
 const BUS_STOPS = [
-  ['66291', 'Aft Medway Drive'],
-  ['66009', 'NEX']
+  { code: '66291', name: 'Aft Medway Drive' },
+  { code: '66009', name: 'NEX' },
 ] as const;
 
-type BusStopCode = keyof typeof BUS_STOPS[number];
+type BusStop = typeof BUS_STOPS[number];
 
-const BusStopCard = ({ code, name }: { code: BusStopCode, name: string }) => {
+const BusStopCard = ({ stop }: { stop: BusStop }) => {
   const [data, setData] = useState<BusArrivalResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +96,7 @@ const BusStopCard = ({ code, name }: { code: BusStopCode, name: string }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/bus-arrival?busStop=${code}`);
+      const response = await fetch(`/api/bus-arrival?busStop=${stop.code}`);
       if (!response.ok) {
         throw new Error('Failed to fetch data');
       }
@@ -117,7 +117,7 @@ const BusStopCard = ({ code, name }: { code: BusStopCode, name: string }) => {
     fetchBusData();
     const interval = setInterval(fetchBusData, 60000); // Refresh every 1 minute
     return () => clearInterval(interval);
-  }, [code]);
+  }, [stop.code]);
 
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -137,8 +137,8 @@ const BusStopCard = ({ code, name }: { code: BusStopCode, name: string }) => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{name}</h2>
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Bus Stop {code}</p>
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{stop.name}</h2>
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Bus Stop {stop.code}</p>
 
       {loading ? (
         <div className="text-center py-8 text-gray-600 dark:text-gray-300">
@@ -231,8 +231,8 @@ export default function Home() {
         </div>
 
         <div className="space-y-6">
-          {BUS_STOPS.map(([code, name]) => (
-            <BusStopCard key={code} code={code as keyof typeof BUS_STOPS[number]} name={name} />
+          {BUS_STOPS.map((stop) => (
+            <BusStopCard key={stop.code} stop={stop} />
           ))}
         </div>
       </div>
