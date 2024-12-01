@@ -67,22 +67,32 @@ export default function Home() {
   const [busStop, setBusStop] = useState('66291');
   const [data, setData] = useState<BusArrivalResponse | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchBusData = async () => {
     setLoading(true);
+    setError(null);
     try {
       const response = await fetch(`/api/bus-arrival?busStop=${busStop}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch data');
+      }
       const data = await response.json();
+      if (data.error) {
+        setError(data.error);
+      }
       setData(data);
     } catch (error) {
       console.error('Error fetching bus data:', error);
+      setError('Failed to fetch bus arrival data. Please try again later.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
     fetchBusData();
-    const interval = setInterval(fetchBusData, 30000); // Refresh every 30 seconds
+    const interval = setInterval(fetchBusData, 30000);
     return () => clearInterval(interval);
   }, [busStop]);
 
@@ -93,7 +103,7 @@ export default function Home() {
     return diffMinutes <= 0 ? 'Arriving' : `${diffMinutes} min`;
   };
 
-  const filtered317Data = data?.Services.filter(service => service.ServiceNo === '317') || [];
+  const filtered317Data = data?.Services?.filter(service => service.ServiceNo === '317') || [];
 
   return (
     <main className="min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
@@ -102,6 +112,7 @@ export default function Home() {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-4">
           <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-2">Where is 317?</h1>
           <p className="text-gray-600 dark:text-gray-400 mb-4">Real-time bus arrival information for service 317</p>
+          
           <div className="flex gap-2 mb-6">
             <input
               type="text"
@@ -112,16 +123,30 @@ export default function Home() {
             />
             <button
               onClick={fetchBusData}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors dark:bg-blue-600 dark:hover:bg-blue-700"
+              disabled={loading}
+              className={`px-4 py-2 bg-blue-500 text-white rounded-lg transition-colors ${
+                loading 
+                  ? 'opacity-50 cursor-not-allowed'
+                  : 'hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700'
+              }`}
             >
-              Search
+              {loading ? 'Loading...' : 'Search'}
             </button>
           </div>
 
+          {error && (
+            <div className="text-center py-4 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg mb-4">
+              {error}
+            </div>
+          )}
+
           {loading ? (
-            <div className="text-center py-4 dark:text-gray-300">Loading...</div>
+            <div className="text-center py-8 dark:text-gray-300">
+              <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div>
+              <div>Loading...</div>
+            </div>
           ) : filtered317Data.length === 0 ? (
-            <div className="text-center py-4 text-gray-600 dark:text-gray-400">
+            <div className="text-center py-8 text-gray-600 dark:text-gray-400">
               No data available for Bus 317 at this stop
             </div>
           ) : (

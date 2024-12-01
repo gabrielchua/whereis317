@@ -12,12 +12,32 @@ export async function GET(request: Request) {
           'AccountKey': process.env.LTA_API_KEY!,
           'accept': 'application/json',
         },
+        cache: 'no-store'
       }
     );
 
+    if (!response.ok) {
+      throw new Error(`API responded with status: ${response.status}`);
+    }
+
     const data = await response.json();
+    
+    if (!data || !data.Services) {
+      return NextResponse.json({ 
+        Services: [],
+        BusStopCode: busStopCode,
+        'odata.metadata': ''
+      });
+    }
+
     return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch bus arrival data' }, { status: 500 });
+    console.error('API Error:', error);
+    return NextResponse.json({ 
+      Services: [],
+      BusStopCode: busStopCode,
+      'odata.metadata': '',
+      error: 'Failed to fetch bus arrival data'
+    }, { status: 200 }); // Return 200 with empty data instead of 500
   }
 } 
